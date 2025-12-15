@@ -233,16 +233,14 @@ def render_sidebar():
         if st.button("Profil Ayarları", use_container_width=True): st.session_state['page'] = "Profil"; st.rerun()
         st.markdown("<div style='margin-top:50px;'></div>", unsafe_allow_html=True)
         if st.button("Çıkış Yap", type="secondary", use_container_width=True): st.session_state['logged_in'] = False; st.rerun()
-
-# --- BURASI DÜZELTİLEN ANALİZ SAYFASI ---
 def analysis_page():
     # Başlık
     st.markdown("## 🩻 Radyoloji İstasyonu")
     
     # İki Kolon: SOL (Girdiler) - SAĞ (Görüntüleme)
-    col_control, col_view = st.columns([1, 2], gap="large") # Sol 1 birim, Sağ 2 birim genişlik
+    col_control, col_view = st.columns([1, 2], gap="large") 
     
-    # SOL TARAFTAKİ KONTROLLER
+    # --- SOL TARAFTAKİ KONTROLLER ---
     with col_control:
         st.markdown('<div class="medical-card">', unsafe_allow_html=True)
         st.markdown("#### 📋 Hasta Bilgileri")
@@ -262,7 +260,7 @@ def analysis_page():
         with c2: inv = st.checkbox("Negatif")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # SAĞ TARAFTAKİ GÖRÜNTÜLEME ALANI
+    # --- SAĞ TARAFTAKİ GÖRÜNTÜLEME ALANI ---
     with col_view:
         if up:
             # RESİM VARSA BURASI ÇALIŞIR
@@ -306,27 +304,22 @@ def analysis_page():
             st.markdown('</div>', unsafe_allow_html=True)
         
         else:
-            # --- RESİM YOKSA BURASI ÇALIŞIR (BOŞLUĞU DOLDURAN KISIM) ---
+            # --- BOŞLUĞU DOLDURAN KISIM (SADELEŞTİRİLDİ) ---
+            # İkonlar ve istatistikler kaldırıldı, sadece temiz bir mesaj kutusu kaldı.
             st.markdown("""
-            <div class="empty-state">
-                <div class="empty-icon">📂</div>
-                <h3>Sistem Analize Hazır</h3>
-                <p>Lütfen sol panelden bir röntgen görüntüsü (DICOM, JPG, PNG) yükleyiniz.</p>
+            <div style="
+                text-align: center; 
+                padding: 100px; 
+                background-color: #FFF8E1; 
+                border: 2px dashed #D4A373; 
+                border-radius: 20px; 
+                color: #8D6E63;">
+                <h2 style="color:#5D4037;">Sistem Analize Hazır</h2>
+                <p>Lütfen sol panelden bir röntgen görüntüsü seçiniz.</p>
                 <br>
-                <small>Desteklenenler: Akciğer Grafisi, Pediatrik Röntgen</small>
+                <small>Yapay zeka motoru devreye girmek için bekliyor...</small>
             </div>
             """, unsafe_allow_html=True)
-            
-            # Altına bir de Dashboard Özeti koyalım ki dolu görünsün
-            st.markdown("<br>", unsafe_allow_html=True)
-            data = db.get_all_stats()
-            if data:
-                st.markdown("#### 📈 Güncel Durum Özeti")
-                df = pd.DataFrame(data, columns=['Teşhis','Durum'])
-                col_s1, col_s2, col_s3 = st.columns(3)
-                col_s1.metric("Toplam Hasta", len(df))
-                col_s2.metric("Bugün İncelenen", len(df)) # Basitlik için toplamı gösteriyoruz
-                col_s3.metric("Normal Oranı", f"%{len(df[df['Teşhis']=='Normal'])/len(df)*100:.0f}" if len(df)>0 else "%0")
 
 def dashboard_page():
     st.markdown("## İstatistikler"); data = db.get_all_stats()
