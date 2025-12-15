@@ -1,0 +1,8 @@
+/.venv
+/data
+/en_iyi_vgg_model.keras
+/hastane_veritabani.db
+/notebooks
+/src
+/yeni_veri_seti
+/__pycache__

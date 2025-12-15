@@ -1,0 +1,9 @@
+streamlit
+tensorflow
+opencv-python-headless
+pillow
+pandas
+fpdf
+pydicom
+matplotlib
+numpy
