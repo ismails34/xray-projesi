@@ -217,7 +217,7 @@ def render_sidebar():
 
 # --- 6. ANALİZ SAYFASI (YENİ DÜZENLİ TASARIM) ---
 def analysis_page():
-    st.markdown("## 🩻 Radyoloji İstasyonu")
+    st.markdown("##  Radyoloji İstasyonu")
     
     # Üst Kısım: Sol Panel (Girdiler) ve Sağ Panel (Görüntüleme Alanı)
     col_control, col_view = st.columns([1, 2.5], gap="medium") 
