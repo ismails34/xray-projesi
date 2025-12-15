@@ -230,10 +230,11 @@ def render_sidebar():
         if st.button("Çıkış Yap", type="secondary", use_container_width=True): st.session_state['logged_in'] = False; st.rerun()
 
 def analysis_page():
-    st.markdown("## 🩻 Radyoloji İstasyonu")
+    st.markdown("## Radyoloji İstasyonu")
     
     col_control, col_view = st.columns([1, 2], gap="large") 
     
+    # --- SOL PANEL (Girdiler) ---
     with col_control:
         st.markdown('<div class="medical-card">', unsafe_allow_html=True)
         st.markdown("#### 📋 Hasta Bilgileri")
@@ -244,6 +245,7 @@ def analysis_page():
         up = st.file_uploader("Röntgen Yükle", type=['jpg','png','dcm'])
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # --- SAĞ PANEL (Görüntüleme ve Sonuç) ---
     with col_view:
         if up:
             st.markdown('<div class="medical-card">', unsafe_allow_html=True)
@@ -251,34 +253,55 @@ def analysis_page():
             if orig:
                 st.image(orig, caption="Orijinal Görüntü", use_container_width=True)
                 st.markdown("<br>", unsafe_allow_html=True)
+                
+                # ANALİZ BUTONU
                 if st.button("YAPAY ZEKA İLE ANALİZİ BAŞLAT ⚡", use_container_width=True):
                     if h_ad:
                         with st.spinner("AI Görüntüyü Tarıyor..."):
                             model = model_yukle()
                             if model:
+                                # Resmi Hazırla
                                 img = np.expand_dims(cv2.resize(np.array(orig),(224,224))/255.0, axis=0)
+                                # Tahmin Yap
                                 preds = model.predict(img)[0]
                                 classes = ['COVID', 'Lung_Opacity', 'Normal', 'Viral Pneumonia']
-                                idx = np.argmax(preds); res = classes[idx]; conf = preds[idx]*100
+                                idx = np.argmax(preds)
+                                res = classes[idx]
+                                conf = preds[idx]*100
                                 
-                                st.success(f"✅ TESPİT: {res} (Güven: %{conf:.2f})") if res=="Normal" else st.error(f"⚠️ BULGU: {res} (Güven: %{conf:.2f})")
+                                # 1. SONUCU YAZDIR
+                                if res == "Normal":
+                                    st.success(f"✅ TESPİT: {res} (Güven: %{conf:.2f})")
+                                else:
+                                    st.error(f"⚠️ BULGU: {res} (Güven: %{conf:.2f})")
                                 
-                                t1, t2 = st.tabs(["📊 Olasılık Grafiği", "🧠 AI Odak Haritası"])
-                                with t1:
-                                    st.bar_chart(pd.DataFrame({"Durum":classes,"Olasılık":preds}).set_index("Durum"), color="#D4A373")
-                                with t2:
-                                    if res!="Normal":
-                                        hm = np.clip(cv2.resize(cv2.cvtColor(cv2.applyColorMap(np.uint8(255*make_gradcam_heatmap(img, model)), cv2.COLORMAP_JET), cv2.COLOR_BGR2RGB),(224,224))*0.4+cv2.resize(np.array(orig),(224,224)),0,255).astype('uint8')
-                                        st.image(hm, caption="Yapay Zeka Odak Alanı", width=300)
-                                    else:
-                                        st.info("Normal görüntülerde odak haritası oluşturulmaz.")
+                                # 2. OLASILIK GRAFİĞİNİ ÇİZ (GERİ GELDİ!)
+                                st.markdown("### 📊 Olasılık Dağılımı")
+                                chart_data = pd.DataFrame({
+                                    "Durum": classes,
+                                    "Olasılık": preds
+                                })
+                                # Grafiği çiziyoruz (Latte renginde)
+                                st.bar_chart(chart_data.set_index("Durum"), color="#D4A373")
 
+                                # 3. DATABASE VE PDF İŞLEMLERİ
                                 db.add_record(st.session_state['username'], h_ad, h_id, res, float(conf), datetime.datetime.now().strftime("%Y-%m-%d"), "AI", "Onay")
-                                st.download_button("RAPORU İNDİR (PDF)", data=create_pdf(st.session_state['username'], h_ad, h_id, res, conf, "AI", datetime.datetime.now().strftime("%Y-%m-%d")), file_name="rapor.pdf", mime="application/pdf", use_container_width=True)
+                                
+                                pdf_data = create_pdf(st.session_state['username'], h_ad, h_id, res, conf, "AI", datetime.datetime.now().strftime("%Y-%m-%d"))
+                                st.download_button("RAPORU İNDİR (PDF)", data=pdf_data, file_name="rapor.pdf", mime="application/pdf", use_container_width=True)
+                                
+                                # 4. ODAK HARİTASI (Sadece hastalık varsa göster)
+                                if res != "Normal":
+                                    st.markdown("---")
+                                    st.info("🧠 Yapay Zeka Odak Haritası (Nereye Baktı?)")
+                                    hm = np.clip(cv2.resize(cv2.cvtColor(cv2.applyColorMap(np.uint8(255*make_gradcam_heatmap(img, model)), cv2.COLORMAP_JET), cv2.COLOR_BGR2RGB),(224,224))*0.4+cv2.resize(np.array(orig),(224,224)),0,255).astype('uint8')
+                                    st.image(hm, caption="Hastalık Tespit Edilen Bölge", width=300)
+
                     else:
                         st.warning("Lütfen hasta adını giriniz.")
             st.markdown('</div>', unsafe_allow_html=True)
         else:
+            # BOŞ DURUM EKRANI
             st.markdown("""
             <div style="text-align: center; padding: 100px; background-color: #FFF8E1; border: 2px dashed #D4A373; border-radius: 20px; color: #8D6E63;">
                 <h2 style="color:#5D4037;">Sistem Analize Hazır</h2>
