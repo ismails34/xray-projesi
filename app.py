@@ -203,7 +203,7 @@ def render_sidebar():
     with st.sidebar:
         prof = db.get_user_profile(st.session_state['username'])
         st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-        if prof and prof[3]: st.image(Image.open(io.BytesIO(prof[3])), width=100)
+        if prof and prof[3]: st.image(Image.open(io.BytesIO(prof[3])), use_container_width=True)
         else: st.markdown("<div style='background-color:#E0D6C8;width:80px;height:80px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:30px;color:#5D4037;'>👨‍⚕️</div>", unsafe_allow_html=True)
         st.markdown(f"<h3 style='color:#FFF !important; margin-top:10px;'>Dr. {prof[0] if prof and prof[0] else st.session_state['username']}</h3>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
