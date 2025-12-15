@@ -13,13 +13,13 @@ import os
 
 # --- 1. SAYFA KONFİGÜRASYONU ---
 st.set_page_config(
-    page_title="GELECEĞE DÖNÜK - MedAI",
+    page_title="MedAI - Pro",
     page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="collapsed" # Girişte sidebar kapalı olsun
+    initial_sidebar_state="collapsed"
 )
 
-# --- 2. CSS TASARIMI (KREM & LATTE - GELECEKÇİ DOKUNUŞ) ---
+# --- 2. CSS TASARIMI (KREM & LATTE - FULL SCREEN) ---
 st.markdown("""
 <style>
     /* GENEL ARKAPLAN */
@@ -27,105 +27,90 @@ st.markdown("""
         background-color: #FDFBF7 !important;
     }
     
-    /* GİRİŞ KARTI (LOGIN CARD) */
+    /* SOL MENÜ (Sidebar) */
+    section[data-testid="stSidebar"] {
+        background-color: #2E2E2E !important; /* Koyu modern sidebar */
+    }
+    
+    /* KARTLAR (Cards) */
+    .medical-card {
+        background-color: #FFFFFF;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: 1px solid #F0E6D2;
+        margin-bottom: 20px;
+    }
+    
+    /* GİRİŞ EKRANI KARTI */
     .auth-card {
         background-color: #FFFFFF;
         padding: 40px;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08); /* Yumuşak kahve gölge */
+        box-shadow: 0 10px 30px rgba(93, 64, 55, 0.08);
         border: 1px solid #F0E6D2;
         text-align: center;
         margin-top: 50px;
     }
-    
-    /* BAŞLIK VE METİNLER */
-    .main-title {
+
+    /* BAŞLIKLAR */
+    h3, h4 {
+        color: #5D4037 !important;
         font-family: 'Helvetica Neue', sans-serif;
-        font-weight: 800;
-        font-size: 32px;
-        color: #5D4037;
-        letter-spacing: -0.5px;
-        margin-bottom: 5px;
+        font-weight: 700;
     }
     
-    .sub-label {
-        color: #8D6E63;
-        font-size: 14px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 30px;
-        display: block;
-    }
-    
-    /* INPUT ALANLARI - HİZALI VE TEMİZ */
+    /* INPUT ALANLARI */
     .stTextInput input {
         background-color: #FAF9F6 !important;
         border: 1px solid #E0D6C8 !important;
-        border-radius: 8px !important;
+        border-radius: 8px;
         color: #5D4037 !important;
-        height: 48px !important;
-        padding-left: 15px !important;
-    }
-    .stTextInput input:focus {
-        border-color: #D4A373 !important;
-        box-shadow: 0 0 0 2px rgba(212, 163, 115, 0.2) !important;
+        padding: 10px;
     }
     
     /* BUTONLAR */
     .stButton button {
-        width: 100%;
-        border-radius: 8px;
-        border: none;
         background-color: #D4A373 !important;
         color: white !important;
+        border-radius: 8px;
+        border: none;
+        height: 45px;
         font-weight: bold;
-        height: 48px;
-        font-size: 16px;
-        transition: all 0.3s ease;
+        transition: 0.3s;
     }
     .stButton button:hover {
         background-color: #BC8A5F !important;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(188, 138, 95, 0.3);
+        transform: scale(1.02);
     }
     
-    /* LINK GÖRÜNÜMLÜ BUTON (Tertiary) */
-    button[kind="secondary"] {
-        background-color: transparent !important;
-        color: #8D6E63 !important;
-        border: none !important;
-        box-shadow: none !important;
-        font-size: 14px !important;
-        margin-top: 10px;
-    }
-    button[kind="secondary"]:hover {
-        color: #5D4037 !important;
-        text-decoration: underline;
-        background-color: transparent !important;
-        transform: none !important;
-    }
-    
-    /* input label gizleme (temiz görünüm için) */
-    .stTextInput label {
+    /* BEKLEME EKRANI (SAĞ TARAF BOŞ KALMASIN DİYE) */
+    .empty-state {
+        text-align: center;
+        padding: 50px;
+        background-color: #FFF8E1;
+        border: 2px dashed #D4A373;
+        border-radius: 20px;
         color: #8D6E63;
-        font-size: 13px;
+    }
+    .empty-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
     }
 
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SESSION STATE ---
+# --- 3. SESSION STATE & DB ---
 if 'auth_mode' not in st.session_state: st.session_state['auth_mode'] = 'login'
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
 if 'username' not in st.session_state: st.session_state['username'] = ""
 if 'page' not in st.session_state: st.session_state['page'] = "Analiz"
 
-# Veritabanı Başlatma
 db.create_tables()
 if not db.check_user_exists("admin"): db.add_user("admin", "12345")
 
-# --- MODEL VE YARDIMCI FONKSİYONLAR (AYNI KALDI) ---
+# --- MODEL & YARDIMCI FONKSİYONLAR ---
 @st.cache_resource
 def model_yukle():
     try: return tf.keras.models.load_model('yeni_coklu_model.keras')
@@ -192,102 +177,54 @@ def apply_filters(image, contrast, brightness, use_clahe, invert):
     if invert: img_array = cv2.bitwise_not(img_array)
     return img_array
 
-# --- 4. YENİ GİRİŞ SAYFASI (Future & Minimal) ---
+# --- 4. GİRİŞ SAYFASI (Future & Minimal) ---
 def login_page():
-    # Sayfayı ortalamak için boş kolonlar
     c_left, c_center, c_right = st.columns([1, 1.2, 1])
-    
     with c_center:
-        # KART TASARIMI BAŞLANGICI
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
+        st.markdown('<h1 style="color:#5D4037; font-size:36px; margin-bottom:5px;">MEDAI</h1>', unsafe_allow_html=True)
         
-        # Başlık ve Alt Etiket
-        st.markdown('<div class="main-title">GELECEĞE DÖNÜK</div>', unsafe_allow_html=True)
-        
-        # MODA GÖRE İÇERİK (Login vs Register)
         if st.session_state['auth_mode'] == 'login':
-            st.markdown('<span class="sub-label">GİRİŞ PORTALI</span>', unsafe_allow_html=True)
-            
-            # Login Formu
+            st.markdown('<p style="color:#8D6E63; letter-spacing:2px; font-size:12px;">GİRİŞ PORTALI</p>', unsafe_allow_html=True)
             u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı Adı")
             p = st.text_input("Şifre", type="password", placeholder="••••••••")
-            
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("GİRİŞ YAP"):
+            if st.button("GİRİŞ YAP", use_container_width=True):
                 if db.login_user(u, p):
-                    st.session_state['logged_in'] = True
-                    st.session_state['username'] = u
-                    st.session_state['page'] = "Analiz"
-                    st.rerun()
-                else:
-                    st.error("Kullanıcı adı veya şifre hatalı.")
-            
-            # Geçiş Linki
+                    st.session_state['logged_in'] = True; st.session_state['username'] = u; st.session_state['page'] = "Analiz"; st.rerun()
+                else: st.error("Hatalı!")
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Hesabın yok mu? Kayıt Ol", type="secondary"):
-                st.session_state['auth_mode'] = 'register'
-                st.rerun()
-                
+                st.session_state['auth_mode'] = 'register'; st.rerun()
         else:
-            # Kayıt Formu
-            st.markdown('<span class="sub-label">YENİ HESAP OLUŞTUR</span>', unsafe_allow_html=True)
-            
-            # Kayıt Alanları
-            col_name1, col_name2 = st.columns(2)
-            with col_name1: name = st.text_input("Ad", placeholder="Ad")
-            with col_name2: surname = st.text_input("Soyad", placeholder="Soyad")
-            
-            email = st.text_input("E-posta Adresi", placeholder="ornek@mail.com")
-            new_u = st.text_input("Kullanıcı Adı Belirle", placeholder="Kullanıcı Adı")
-            
-            col_pass1, col_pass2 = st.columns(2)
-            with col_pass1: np1 = st.text_input("Şifre", type="password", placeholder="••••••••")
-            with col_pass2: np2 = st.text_input("Şifre Tekrar", type="password", placeholder="••••••••")
-            
+            st.markdown('<p style="color:#8D6E63; letter-spacing:2px; font-size:12px;">YENİ ÜYELİK</p>', unsafe_allow_html=True)
+            c1, c2 = st.columns(2); 
+            with c1: name = st.text_input("Ad")
+            with c2: surname = st.text_input("Soyad")
+            new_u = st.text_input("Kullanıcı Adı Belirle")
+            p1 = st.text_input("Şifre", type="password")
+            p2 = st.text_input("Şifre Tekrar", type="password")
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            if st.button("KAYDI TAMAMLA"):
-                if np1 == np2 and new_u and email:
+            if st.button("KAYIT OL", use_container_width=True):
+                if p1==p2 and new_u:
                     if not db.check_user_exists(new_u):
-                        # Kullanıcıyı DB'ye ekle
-                        db.add_user(new_u, np1)
-                        # Profil bilgilerini güncelle (İsim bilgisini kaydediyoruz)
-                        full_name = f"{name} {surname}"
-                        db.update_user_profile(new_u, full_name, "Yeni Üye", f"İletişim: {email}", None)
-                        
-                        st.success("Hesap oluşturuldu! Giriş yapabilirsiniz.")
-                        # Otomatik logine geç
-                        st.session_state['auth_mode'] = 'login'
-                        # Biraz bekleyip sayfayı yenile ki kullanıcı mesajı görsün
-                        import time
-                        time.sleep(1.5)
-                        st.rerun()
-                    else:
-                        st.error("Bu kullanıcı adı zaten alınmış.")
-                else:
-                    st.warning("Lütfen tüm alanları doldurun ve şifrelerin eşleştiğinden emin olun.")
-            
-            # Geri Dönüş Linki
+                        db.add_user(new_u, p1)
+                        db.update_user_profile(new_u, f"{name} {surname}", "Yeni Üye", "", None)
+                        st.success("Başarılı!"); st.session_state['auth_mode'] = 'login'; st.rerun()
+                    else: st.error("Alınmış.")
+                else: st.warning("Eksik veya hatalı.")
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Zaten hesabın var mı? Giriş Yap", type="secondary"):
-                st.session_state['auth_mode'] = 'login'
-                st.rerun()
+            if st.button("Geri Dön", type="secondary"): st.session_state['auth_mode'] = 'login'; st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True) # Kart Bitişi
-
-# --- 5. İÇERİK SAYFALARI (AYNI) ---
+# --- 5. İÇERİK SAYFALARI ---
 def render_sidebar():
     with st.sidebar:
         prof = db.get_user_profile(st.session_state['username'])
         st.markdown('<div style="text-align: center;">', unsafe_allow_html=True)
-        if prof and prof[3]: st.image(Image.open(io.BytesIO(prof[3])), width=120)
+        if prof and prof[3]: st.image(Image.open(io.BytesIO(prof[3])), width=100)
         else: st.markdown("<div style='background-color:#E0D6C8;width:80px;height:80px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:30px;color:#5D4037;'>👨‍⚕️</div>", unsafe_allow_html=True)
-        
-        doc_name = prof[0] if prof and prof[0] else st.session_state['username'].capitalize()
-        doc_title = prof[1] if prof and prof[1] else "Radyoloji Uzmanı"
-        st.markdown(f"<h3 style='margin-bottom:0px;color:#5D4037;'>Dr. {doc_name}</h3>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#8D6E63;font-size:14px;margin-top:-5px;'>{doc_title}</p>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:#FFF !important; margin-top:10px;'>Dr. {prof[0] if prof and prof[0] else st.session_state['username']}</h3>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown("---")
         if st.button("Analiz & Rapor", use_container_width=True): st.session_state['page'] = "Analiz"; st.rerun()
@@ -295,49 +232,101 @@ def render_sidebar():
         if st.button("Hasta Arşivi", use_container_width=True): st.session_state['page'] = "Kayitlar"; st.rerun()
         if st.button("Profil Ayarları", use_container_width=True): st.session_state['page'] = "Profil"; st.rerun()
         st.markdown("<div style='margin-top:50px;'></div>", unsafe_allow_html=True)
-        if st.button("Çıkış Yap", type="secondary", use_container_width=True): 
-            st.session_state['logged_in'] = False; st.rerun()
+        if st.button("Çıkış Yap", type="secondary", use_container_width=True): st.session_state['logged_in'] = False; st.rerun()
 
+# --- BURASI DÜZELTİLEN ANALİZ SAYFASI ---
 def analysis_page():
-    st.markdown("## X-Ray Analiz İstasyonu")
-    st.markdown("<p style='color:#8D6E63;'>Yapay zeka destekli görüntü işleme ve tanı asistanı</p>", unsafe_allow_html=True)
-    col_control, col_view = st.columns([1, 2.5], gap="large")
+    # Başlık
+    st.markdown("## 🩻 Radyoloji İstasyonu")
+    
+    # İki Kolon: SOL (Girdiler) - SAĞ (Görüntüleme)
+    col_control, col_view = st.columns([1, 2], gap="large") # Sol 1 birim, Sağ 2 birim genişlik
+    
+    # SOL TARAFTAKİ KONTROLLER
     with col_control:
-        st.markdown('<div class="medical-card"><h4>Hasta Kaydı</h4>', unsafe_allow_html=True)
+        st.markdown('<div class="medical-card">', unsafe_allow_html=True)
+        st.markdown("#### 📋 Hasta Bilgileri")
         h_ad = st.text_input("Hasta Adı Soyadı")
         h_id = st.text_input("Protokol No")
-        st.markdown('</div><div class="medical-card"><h4>Görüntü Filtreleri</h4>', unsafe_allow_html=True)
-        con = st.slider("Kontrast", 0.5, 3.0, 1.0); br = st.slider("Parlaklık", -100, 100, 0)
+        st.markdown("---")
+        st.markdown("#### 📤 Dosya Seçimi")
+        up = st.file_uploader("Röntgen Yükle", type=['jpg','png','dcm'])
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="medical-card">', unsafe_allow_html=True)
+        st.markdown("#### ⚙️ Görüntü Ayarları")
+        con = st.slider("Kontrast", 0.5, 3.0, 1.0)
+        br = st.slider("Parlaklık", -100, 100, 0)
         c1, c2 = st.columns(2)
         with c1: clahe = st.checkbox("CLAHE")
         with c2: inv = st.checkbox("Negatif")
-        st.markdown('</div><div class="medical-card" style="text-align:center;"><h4>Görüntü Yükle</h4>', unsafe_allow_html=True)
-        up = st.file_uploader("", type=['jpg','png','dcm'], label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # SAĞ TARAFTAKİ GÖRÜNTÜLEME ALANI
     with col_view:
         if up:
+            # RESİM VARSA BURASI ÇALIŞIR
+            st.markdown('<div class="medical-card">', unsafe_allow_html=True)
             orig = load_image_universal(up)
             if orig:
                 filt = Image.fromarray(apply_filters(orig, con, br, clahe, inv))
-                c1, c2 = st.columns(2); c1.image(orig, caption="Orijinal"); c2.image(filt, caption="İşlenmiş")
+                c1, c2 = st.columns(2)
+                c1.image(orig, caption="Orijinal Görüntü", use_container_width=True)
+                c2.image(filt, caption="İşlenmiş Görüntü", use_container_width=True)
+                
                 st.markdown("<br>", unsafe_allow_html=True)
-                col_btn1, col_btn2, col_btn3 = st.columns([1,2,1])
-                with col_btn2: analyze = st.button("ANALİZİ BAŞLAT", use_container_width=True)
-                if analyze and h_ad:
-                    with st.spinner("Analiz yapılıyor..."):
-                        model = model_yukle()
-                        if model:
-                            img = np.expand_dims(cv2.resize(np.array(orig),(224,224))/255.0, axis=0)
-                            preds = model.predict(img)[0]
-                            classes = ['COVID', 'Lung_Opacity', 'Normal', 'Viral Pneumonia']
-                            idx = np.argmax(preds); res = classes[idx]; conf = preds[idx]*100
-                            st.markdown("---"); c_r1, c_r2 = st.columns(2)
-                            with c_r1:
-                                st.success(f"✅ {res} (%{conf:.2f})") if res=="Normal" else st.error(f"⚠️ {res} (%{conf:.2f})")
+                # Analiz Butonu Ortada
+                if st.button("YAPAY ZEKA İLE ANALİZİ BAŞLAT ⚡", use_container_width=True):
+                    if h_ad:
+                        with st.spinner("AI Görüntüyü Tarıyor..."):
+                            model = model_yukle()
+                            if model:
+                                img = np.expand_dims(cv2.resize(np.array(orig),(224,224))/255.0, axis=0)
+                                preds = model.predict(img)[0]
+                                classes = ['COVID', 'Lung_Opacity', 'Normal', 'Viral Pneumonia']
+                                idx = np.argmax(preds); res = classes[idx]; conf = preds[idx]*100
+                                
+                                st.success(f"✅ TESPİT: {res} (Güven: %{conf:.2f})") if res=="Normal" else st.error(f"⚠️ BULGU: {res} (Güven: %{conf:.2f})")
+                                
+                                # Detaylar
+                                t1, t2 = st.tabs(["📊 Olasılık Grafiği", "🧠 AI Odak Haritası"])
+                                with t1:
+                                    st.bar_chart(pd.DataFrame({"Durum":classes,"Olasılık":preds}).set_index("Durum"), color="#D4A373")
+                                with t2:
+                                    if res!="Normal":
+                                        hm = np.clip(cv2.resize(cv2.cvtColor(cv2.applyColorMap(np.uint8(255*make_gradcam_heatmap(img, model)), cv2.COLORMAP_JET), cv2.COLOR_BGR2RGB),(224,224))*0.4+cv2.resize(np.array(orig),(224,224)),0,255).astype('uint8')
+                                        st.image(hm, caption="Yapay Zeka Odak Alanı", width=300)
+                                    else:
+                                        st.info("Normal görüntülerde odak haritası oluşturulmaz.")
+
                                 db.add_record(st.session_state['username'], h_ad, h_id, res, float(conf), datetime.datetime.now().strftime("%Y-%m-%d"), "AI", "Onay")
-                                st.download_button("RAPOR İNDİR", data=create_pdf(st.session_state['username'], h_ad, h_id, res, conf, "AI", datetime.datetime.now().strftime("%Y-%m-%d")), file_name="rapor.pdf", mime="application/pdf")
-                            with c_r2: st.bar_chart(pd.DataFrame({"D":classes,"P":preds}).set_index("D"), color="#D4A373")
-                            if res!="Normal": st.image(np.clip(cv2.resize(cv2.cvtColor(cv2.applyColorMap(np.uint8(255*make_gradcam_heatmap(img, model)), cv2.COLORMAP_JET), cv2.COLOR_BGR2RGB),(224,224))*0.4+cv2.resize(np.array(orig),(224,224)),0,255).astype('uint8'), caption="Odak", width=300)
+                                st.download_button("RAPORU İNDİR (PDF)", data=create_pdf(st.session_state['username'], h_ad, h_id, res, conf, "AI", datetime.datetime.now().strftime("%Y-%m-%d")), file_name="rapor.pdf", mime="application/pdf", use_container_width=True)
+                    else:
+                        st.warning("Lütfen hasta adını giriniz.")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        else:
+            # --- RESİM YOKSA BURASI ÇALIŞIR (BOŞLUĞU DOLDURAN KISIM) ---
+            st.markdown("""
+            <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <h3>Sistem Analize Hazır</h3>
+                <p>Lütfen sol panelden bir röntgen görüntüsü (DICOM, JPG, PNG) yükleyiniz.</p>
+                <br>
+                <small>Desteklenenler: Akciğer Grafisi, Pediatrik Röntgen</small>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Altına bir de Dashboard Özeti koyalım ki dolu görünsün
+            st.markdown("<br>", unsafe_allow_html=True)
+            data = db.get_all_stats()
+            if data:
+                st.markdown("#### 📈 Güncel Durum Özeti")
+                df = pd.DataFrame(data, columns=['Teşhis','Durum'])
+                col_s1, col_s2, col_s3 = st.columns(3)
+                col_s1.metric("Toplam Hasta", len(df))
+                col_s2.metric("Bugün İncelenen", len(df)) # Basitlik için toplamı gösteriyoruz
+                col_s3.metric("Normal Oranı", f"%{len(df[df['Teşhis']=='Normal'])/len(df)*100:.0f}" if len(df)>0 else "%0")
 
 def dashboard_page():
     st.markdown("## İstatistikler"); data = db.get_all_stats()
