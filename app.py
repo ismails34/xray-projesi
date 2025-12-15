@@ -13,7 +13,7 @@ import os
 
 # --- 1. SAYFA KONFİGÜRASYONU ---
 st.set_page_config(
-    page_title="MedAI - Pro",
+    page_title="GELECEĞE DÖNÜK - MedAI",
     page_icon="🧬",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -82,20 +82,6 @@ st.markdown("""
     .stButton button:hover {
         background-color: #BC8A5F !important;
         transform: scale(1.02);
-    }
-    
-    /* BEKLEME EKRANI (SAĞ TARAF BOŞ KALMASIN DİYE) */
-    .empty-state {
-        text-align: center;
-        padding: 50px;
-        background-color: #FFF8E1;
-        border: 2px dashed #D4A373;
-        border-radius: 20px;
-        color: #8D6E63;
-    }
-    .empty-icon {
-        font-size: 60px;
-        margin-bottom: 20px;
     }
 
 </style>
@@ -166,23 +152,13 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name="out_relu"):
         return heatmap.numpy()
     except: return np.zeros((224, 224))
 
-def apply_filters(image, contrast, brightness, use_clahe, invert):
-    img_array = np.array(image)
-    img_array = cv2.convertScaleAbs(img_array, alpha=contrast, beta=brightness)
-    if len(img_array.shape) == 3: gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    else: gray = img_array
-    if use_clahe:
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)); gray = clahe.apply(gray)
-        img_array = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
-    if invert: img_array = cv2.bitwise_not(img_array)
-    return img_array
-
-# --- 4. GİRİŞ SAYFASI (Future & Minimal) ---
+# --- 4. GİRİŞ SAYFASI (DÜZELTİLDİ: BAŞLIK DEĞİŞTİ) ---
 def login_page():
     c_left, c_center, c_right = st.columns([1, 1.2, 1])
     with c_center:
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
-        st.markdown('<h1 style="color:#5D4037; font-size:36px; margin-bottom:5px;">MEDAI</h1>', unsafe_allow_html=True)
+        # Başlık değiştirildi
+        st.markdown('<h1 style="color:#5D4037; font-size:36px; margin-bottom:5px;">GELECEĞE DÖNÜK</h1>', unsafe_allow_html=True)
         
         if st.session_state['auth_mode'] == 'login':
             st.markdown('<p style="color:#8D6E63; letter-spacing:2px; font-size:12px;">GİRİŞ PORTALI</p>', unsafe_allow_html=True)
@@ -234,15 +210,12 @@ def render_sidebar():
         st.markdown("<div style='margin-top:50px;'></div>", unsafe_allow_html=True)
         if st.button("Çıkış Yap", type="secondary", use_container_width=True): st.session_state['logged_in'] = False; st.rerun()
 
-# --- BURASI DÜZELTİLEN ANALİZ SAYFASI ---
+# --- 6. ANALİZ SAYFASI (DÜZELTİLDİ: GÖRÜNTÜ AYARLARI KALDIRILDI) ---
 def analysis_page():
-    # Başlık
     st.markdown("## 🩻 Radyoloji İstasyonu")
     
-    # İki Kolon: SOL (Girdiler) - SAĞ (Görüntüleme)
-    col_control, col_view = st.columns([1, 2], gap="large") # Sol 1 birim, Sağ 2 birim genişlik
+    col_control, col_view = st.columns([1, 2], gap="large") 
     
-    # SOL TARAFTAKİ KONTROLLER
     with col_control:
         st.markdown('<div class="medical-card">', unsafe_allow_html=True)
         st.markdown("#### 📋 Hasta Bilgileri")
@@ -253,29 +226,17 @@ def analysis_page():
         up = st.file_uploader("Röntgen Yükle", type=['jpg','png','dcm'])
         st.markdown('</div>', unsafe_allow_html=True)
         
-        st.markdown('<div class="medical-card">', unsafe_allow_html=True)
-        st.markdown("#### ⚙️ Görüntü Ayarları")
-        con = st.slider("Kontrast", 0.5, 3.0, 1.0)
-        br = st.slider("Parlaklık", -100, 100, 0)
-        c1, c2 = st.columns(2)
-        with c1: clahe = st.checkbox("CLAHE")
-        with c2: inv = st.checkbox("Negatif")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Görüntü Ayarları Kartı Kaldırıldı
 
-    # SAĞ TARAFTAKİ GÖRÜNTÜLEME ALANI
     with col_view:
         if up:
-            # RESİM VARSA BURASI ÇALIŞIR
             st.markdown('<div class="medical-card">', unsafe_allow_html=True)
             orig = load_image_universal(up)
             if orig:
-                filt = Image.fromarray(apply_filters(orig, con, br, clahe, inv))
-                c1, c2 = st.columns(2)
-                c1.image(orig, caption="Orijinal Görüntü", use_container_width=True)
-                c2.image(filt, caption="İşlenmiş Görüntü", use_container_width=True)
+                # Filtreleme kaldırıldı, sadece orijinal görüntü gösteriliyor
+                st.image(orig, caption="Orijinal Görüntü", use_container_width=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                # Analiz Butonu Ortada
                 if st.button("YAPAY ZEKA İLE ANALİZİ BAŞLAT ⚡", use_container_width=True):
                     if h_ad:
                         with st.spinner("AI Görüntüyü Tarıyor..."):
@@ -288,7 +249,6 @@ def analysis_page():
                                 
                                 st.success(f"✅ TESPİT: {res} (Güven: %{conf:.2f})") if res=="Normal" else st.error(f"⚠️ BULGU: {res} (Güven: %{conf:.2f})")
                                 
-                                # Detaylar
                                 t1, t2 = st.tabs(["📊 Olasılık Grafiği", "🧠 AI Odak Haritası"])
                                 with t1:
                                     st.bar_chart(pd.DataFrame({"Durum":classes,"Olasılık":preds}).set_index("Durum"), color="#D4A373")
@@ -306,27 +266,20 @@ def analysis_page():
             st.markdown('</div>', unsafe_allow_html=True)
         
         else:
-            # --- RESİM YOKSA BURASI ÇALIŞIR (BOŞLUĞU DOLDURAN KISIM) ---
             st.markdown("""
-            <div class="empty-state">
-                <div class="empty-icon">📂</div>
-                <h3>Sistem Analize Hazır</h3>
-                <p>Lütfen sol panelden bir röntgen görüntüsü (DICOM, JPG, PNG) yükleyiniz.</p>
+            <div style="
+                text-align: center; 
+                padding: 100px; 
+                background-color: #FFF8E1; 
+                border: 2px dashed #D4A373; 
+                border-radius: 20px; 
+                color: #8D6E63;">
+                <h2 style="color:#5D4037;">Sistem Analize Hazır</h2>
+                <p>Lütfen sol panelden bir röntgen görüntüsü seçiniz.</p>
                 <br>
-                <small>Desteklenenler: Akciğer Grafisi, Pediatrik Röntgen</small>
+                <small>Yapay zeka motoru devreye girmek için bekliyor...</small>
             </div>
             """, unsafe_allow_html=True)
-            
-            # Altına bir de Dashboard Özeti koyalım ki dolu görünsün
-            st.markdown("<br>", unsafe_allow_html=True)
-            data = db.get_all_stats()
-            if data:
-                st.markdown("#### 📈 Güncel Durum Özeti")
-                df = pd.DataFrame(data, columns=['Teşhis','Durum'])
-                col_s1, col_s2, col_s3 = st.columns(3)
-                col_s1.metric("Toplam Hasta", len(df))
-                col_s2.metric("Bugün İncelenen", len(df)) # Basitlik için toplamı gösteriyoruz
-                col_s3.metric("Normal Oranı", f"%{len(df[df['Teşhis']=='Normal'])/len(df)*100:.0f}" if len(df)>0 else "%0")
 
 def dashboard_page():
     st.markdown("## İstatistikler"); data = db.get_all_stats()
@@ -354,7 +307,7 @@ def profile_page():
             db.update_user_profile(u, name, spec, bio, blob)
             st.success("Kaydedildi!"); st.rerun()
 
-# --- 6. ANA AKIŞ ---
+# --- 7. ANA AKIŞ ---
 if st.session_state['logged_in']:
     render_sidebar()
     if st.session_state['page'] == "Dashboard": dashboard_page()
