@@ -19,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 2. CSS TASARIMI (KREM & LATTE - FULL SCREEN) ---
+# --- 2. CSS TASARIMI (DÜZELTİLMİŞ ETİKETLER) ---
 st.markdown("""
 <style>
     /* GENEL ARKAPLAN */
@@ -29,10 +29,10 @@ st.markdown("""
     
     /* SOL MENÜ (Sidebar) */
     section[data-testid="stSidebar"] {
-        background-color: #2E2E2E !important; /* Koyu modern sidebar */
+        background-color: #2E2E2E !important;
     }
     
-    /* KARTLAR (Cards) */
+    /* KARTLAR */
     .medical-card {
         background-color: #FFFFFF;
         padding: 25px;
@@ -54,19 +54,26 @@ st.markdown("""
     }
 
     /* BAŞLIKLAR */
-    h3, h4 {
+    h1, h2, h3, h4 {
         color: #5D4037 !important;
         font-family: 'Helvetica Neue', sans-serif;
         font-weight: 700;
     }
     
-    /* INPUT ALANLARI */
+    /* INPUT ALANLARI VE ETİKETLERİ (BURASI DÜZELTİLDİ) */
     .stTextInput input {
         background-color: #FAF9F6 !important;
         border: 1px solid #E0D6C8 !important;
         border-radius: 8px;
         color: #5D4037 !important;
         padding: 10px;
+    }
+    
+    /* Kutucuğun üzerindeki yazıyı (Ad, Soyad vb.) görünür yap */
+    .stTextInput label p {
+        font-size: 15px !important;
+        color: #5D4037 !important; /* Koyu Kahve */
+        font-weight: 600 !important;
     }
     
     /* BUTONLAR */
@@ -152,45 +159,57 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name="out_relu"):
         return heatmap.numpy()
     except: return np.zeros((224, 224))
 
-# --- 4. GİRİŞ SAYFASI (DÜZELTİLDİ: BAŞLIK DEĞİŞTİ) ---
+# --- 4. GİRİŞ SAYFASI (DÜZELTİLDİ: YAZILAR ARTIK GÖRÜNÜYOR) ---
 def login_page():
     c_left, c_center, c_right = st.columns([1, 1.2, 1])
     with c_center:
         st.markdown('<div class="auth-card">', unsafe_allow_html=True)
-        # Başlık değiştirildi
         st.markdown('<h1 style="color:#5D4037; font-size:36px; margin-bottom:5px;">GELECEĞE DÖNÜK</h1>', unsafe_allow_html=True)
         
         if st.session_state['auth_mode'] == 'login':
             st.markdown('<p style="color:#8D6E63; letter-spacing:2px; font-size:12px;">GİRİŞ PORTALI</p>', unsafe_allow_html=True)
-            u = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı Adı")
+            
+            # Label ve Placeholder eklendi
+            u = st.text_input("Kullanıcı Adı", placeholder="Örn: admin")
             p = st.text_input("Şifre", type="password", placeholder="••••••••")
+            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("GİRİŞ YAP", use_container_width=True):
                 if db.login_user(u, p):
                     st.session_state['logged_in'] = True; st.session_state['username'] = u; st.session_state['page'] = "Analiz"; st.rerun()
-                else: st.error("Hatalı!")
+                else: st.error("Hatalı Kullanıcı Adı veya Şifre!")
+            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Hesabın yok mu? Kayıt Ol", type="secondary"):
                 st.session_state['auth_mode'] = 'register'; st.rerun()
+        
         else:
             st.markdown('<p style="color:#8D6E63; letter-spacing:2px; font-size:12px;">YENİ ÜYELİK</p>', unsafe_allow_html=True)
-            c1, c2 = st.columns(2); 
-            with c1: name = st.text_input("Ad")
-            with c2: surname = st.text_input("Soyad")
-            new_u = st.text_input("Kullanıcı Adı Belirle")
-            p1 = st.text_input("Şifre", type="password")
-            p2 = st.text_input("Şifre Tekrar", type="password")
+            
+            # Kayıt Alanlarına Açıklama Eklendi
+            c1, c2 = st.columns(2)
+            with c1: name = st.text_input("Ad", placeholder="Adınız")
+            with c2: surname = st.text_input("Soyad", placeholder="Soyadınız")
+            
+            new_u = st.text_input("Kullanıcı Adı Belirle", placeholder="Örn: dr_ahmet")
+            p1 = st.text_input("Şifre", type="password", placeholder="Şifreniz")
+            p2 = st.text_input("Şifre Tekrar", type="password", placeholder="Şifrenizi doğrulayın")
+            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("KAYIT OL", use_container_width=True):
                 if p1==p2 and new_u:
                     if not db.check_user_exists(new_u):
                         db.add_user(new_u, p1)
                         db.update_user_profile(new_u, f"{name} {surname}", "Yeni Üye", "", None)
-                        st.success("Başarılı!"); st.session_state['auth_mode'] = 'login'; st.rerun()
-                    else: st.error("Alınmış.")
-                else: st.warning("Eksik veya hatalı.")
+                        st.success("Kayıt Başarılı! Giriş yapabilirsiniz."); 
+                        import time; time.sleep(1.5)
+                        st.session_state['auth_mode'] = 'login'; st.rerun()
+                    else: st.error("Bu kullanıcı adı zaten alınmış.")
+                else: st.warning("Lütfen tüm alanları doldurun ve şifrelerin eşleştiğinden emin olun.")
+            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Geri Dön", type="secondary"): st.session_state['auth_mode'] = 'login'; st.rerun()
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 5. İÇERİK SAYFALARI ---
@@ -210,7 +229,6 @@ def render_sidebar():
         st.markdown("<div style='margin-top:50px;'></div>", unsafe_allow_html=True)
         if st.button("Çıkış Yap", type="secondary", use_container_width=True): st.session_state['logged_in'] = False; st.rerun()
 
-# --- 6. ANALİZ SAYFASI (DÜZELTİLDİ: GÖRÜNTÜ AYARLARI KALDIRILDI) ---
 def analysis_page():
     st.markdown("## 🩻 Radyoloji İstasyonu")
     
@@ -225,17 +243,13 @@ def analysis_page():
         st.markdown("#### 📤 Dosya Seçimi")
         up = st.file_uploader("Röntgen Yükle", type=['jpg','png','dcm'])
         st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Görüntü Ayarları Kartı Kaldırıldı
 
     with col_view:
         if up:
             st.markdown('<div class="medical-card">', unsafe_allow_html=True)
             orig = load_image_universal(up)
             if orig:
-                # Filtreleme kaldırıldı, sadece orijinal görüntü gösteriliyor
                 st.image(orig, caption="Orijinal Görüntü", use_container_width=True)
-                
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("YAPAY ZEKA İLE ANALİZİ BAŞLAT ⚡", use_container_width=True):
                     if h_ad:
@@ -264,16 +278,9 @@ def analysis_page():
                     else:
                         st.warning("Lütfen hasta adını giriniz.")
             st.markdown('</div>', unsafe_allow_html=True)
-        
         else:
             st.markdown("""
-            <div style="
-                text-align: center; 
-                padding: 100px; 
-                background-color: #FFF8E1; 
-                border: 2px dashed #D4A373; 
-                border-radius: 20px; 
-                color: #8D6E63;">
+            <div style="text-align: center; padding: 100px; background-color: #FFF8E1; border: 2px dashed #D4A373; border-radius: 20px; color: #8D6E63;">
                 <h2 style="color:#5D4037;">Sistem Analize Hazır</h2>
                 <p>Lütfen sol panelden bir röntgen görüntüsü seçiniz.</p>
                 <br>
